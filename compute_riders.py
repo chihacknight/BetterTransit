@@ -79,7 +79,8 @@ for segment in segments:
 				(float(old_fine_lon), float(old_fine_lat)),
 				(float(fine_lon), float(fine_lat))
 			]),
-			properties={'num_passengers': round(running_total, 1)}
+			properties={'num_passengers': round(running_total, 1)},
+			style={'stroke-width': running_total/10}
 		)
 		features.append(feature)
 		#writer.writerow([old_fine_lat, old_fine_lon, fine_lat, fine_lon, round(running_total, 1)])
