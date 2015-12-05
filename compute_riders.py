@@ -1,5 +1,6 @@
 import psycopg2
 import csv
+import geojson
 
 conn = psycopg2.connect(database='transit', user='transit')
 cursor = conn.cursor()
@@ -60,17 +61,31 @@ stop_index = 0
 running_total = 0
 old_fine_lat = None
 old_fine_lon = None
-with open('146_segments.csv', 'wb') as csvfile:
-	writer = csv.writer(csvfile)
-	for segment in segments:
-		shape_id, coarse_lat, coarse_lon, fine_lat, fine_lon, segment_sequence = segment
-		if str(coarse_lat) == str(stops[stop_index][4]) and str(coarse_lon) == str(stops[stop_index][5]):
-			running_total += stops[stop_index][2]
-			running_total -= stops[stop_index][3]
-			print running_total, "on the bus at", stops[stop_index][6], fine_lat, fine_lon
-			stop_index += 1
-		if old_fine_lat is not None:
-			print running_total, "on between", old_fine_lat, old_fine_lon, "and", fine_lat, fine_lon
-			writer.writerow([old_fine_lat, old_fine_lon, fine_lat, fine_lon, round(running_total, 1)])
-		old_fine_lat = fine_lat
-		old_fine_lon = fine_lon
+features = []
+#writer = csv.writer(csvfile)
+for segment in segments:
+	shape_id, coarse_lat, coarse_lon, fine_lat, fine_lon, segment_sequence = segment
+	if stop_index > len(stops)-1:
+		continue
+	if str(coarse_lat) == str(stops[stop_index][4]) and str(coarse_lon) == str(stops[stop_index][5]):
+		running_total += stops[stop_index][2]
+		running_total -= stops[stop_index][3]
+		print running_total, "on the bus at", stops[stop_index][6], fine_lat, fine_lon
+		stop_index += 1
+	if old_fine_lat is not None:
+		print running_total, "on between", old_fine_lat, old_fine_lon, "and", fine_lat, fine_lon
+		feature = geojson.Feature(
+			geometry=geojson.LineString([
+				(float(old_fine_lon), float(old_fine_lat)),
+				(float(fine_lon), float(fine_lat))
+			]),
+			properties={'num_passengers': round(running_total, 1)}
+		)
+		features.append(feature)
+		#writer.writerow([old_fine_lat, old_fine_lon, fine_lat, fine_lon, round(running_total, 1)])
+	old_fine_lat = fine_lat
+	old_fine_lon = fine_lon
+
+coll = geojson.FeatureCollection(features)
+with open('146_segments.geojson', 'wb') as jsonfile:
+	jsonfile.write(geojson.dumps(coll))
