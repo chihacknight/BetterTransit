@@ -1,20 +1,30 @@
 import psycopg2
 import csv
 import geojson
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--route', type=str)
+parser.add_argument('--direction', type=str)
+
+args = parser.parse_args()
+
+route = args.route
+direction = args.direction
 
 conn = psycopg2.connect(database='transit', user='transit')
 cursor = conn.cursor()
-query = """
+cursor.execute("""
 select t.shape_id, count(*), min(t.trip_id)
 from gtfs_trips t 
 join gtfs_calendar c using (service_id)
 where monday = '1' and
-route_id = '146' and
-direction = 'South'
+route_id = %s and
+direction = %s
 group by 1
-order by 2 desc limit 1"""
+order by 2 desc limit 1
+""", (route, direction))
 
-cursor.execute(query)
 results = cursor.fetchone()
 shape_id = results[0]
 trip_id = results[2]
@@ -35,9 +45,9 @@ from
 	join foia_data f using (stop_id)
 	join gtfs_stops s using (stop_id)
 where trip_id = %s
-and route = '146'
+and route = %s
 order by g.stop_sequence
-""", (trip_id,))
+""", (trip_id, route))
 
 stops = cursor.fetchall()
 print len(stops)
@@ -88,5 +98,5 @@ for segment in segments:
 	old_fine_lon = fine_lon
 
 coll = geojson.FeatureCollection(features)
-with open('146_segments.geojson', 'wb') as jsonfile:
+with open('data/{}_{}_segments.geojson'.format(route, direction), 'wb') as jsonfile:
 	jsonfile.write(geojson.dumps(coll))
