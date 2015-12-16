@@ -107,6 +107,9 @@ function getNormalized(data) {
 	range['max'] = max;
 	range['min'] = min;
 	
+	//Vishal---> 
+	this.range = range; // Saving range in this.rang, so it can be accessed in getColor().
+	//<---Vishal
 	return range;
 }
 
@@ -140,13 +143,20 @@ function resizeMap() {
 }
 
 function getColor(value) {
-/*
-	#f0f0f0
-#bdbdbd
-#636363
-*/
 
-	if()
+	var val = value;
+	// var colorsArray = ["#9ecae1","#3182bd"];
+	var colorsArray = ["#fc9272","#de2d26"];
+	//Finding the percentile. Update the formula if changes nees to be done.
+	var percentile = (val/this.range['max']) * 100; 
+	// console.log("Accessed"+this.range['max']+"Value"+val);
+
+	if(percentile>75){
+		var index = 1;
+	} else{
+		var index = 0;
+	}
+	return colorsArray[index];
 }
 
 function onEachFeature(feature, layer) {
@@ -164,6 +174,7 @@ function onEachFeature(feature, layer) {
 		color = getColor(p.num_passengers);
 		style = {
 			weight: weight,
+			color: color,
 			opacity: 0.09
 		}
 		layer.setStyle(style);
