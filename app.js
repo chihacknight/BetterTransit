@@ -107,8 +107,8 @@ function getNormalized(data) {
 	range['max'] = max;
 	range['min'] = min;
 	
-	//Vishal--->
-	this.range = range;
+	//Vishal---> 
+	this.range = range; // Saving range in this.rang, so it can be accessed in getColor().
 	//<---Vishal
 	return range;
 }
