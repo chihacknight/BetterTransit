@@ -139,15 +139,15 @@ function resizeMap() {
 	return height;
 }
 
-/*
 function getColor(value) {
+/*
 	#f0f0f0
 #bdbdbd
 #636363
+*/
 
 	if()
 }
-*/
 
 function onEachFeature(feature, layer) {
 	
