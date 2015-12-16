@@ -139,6 +139,16 @@ function resizeMap() {
 	return height;
 }
 
+function getColor(value) {
+/*
+	#f0f0f0
+#bdbdbd
+#636363
+*/
+
+	if()
+}
+
 function onEachFeature(feature, layer) {
 	
 	/*
@@ -151,9 +161,10 @@ function onEachFeature(feature, layer) {
 		
 		p = feature.properties;
 		weight = getZScore(p.num_passengers);
+		color = getColor(p.num_passengers);
 		style = {
 			weight: weight,
-			opacity: .09
+			opacity: 0.09
 		}
 		layer.setStyle(style);
     }
