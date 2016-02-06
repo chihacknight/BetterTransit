@@ -8,7 +8,7 @@ cursor = conn.cursor()
 
 
 def generate_route_dir_combos(cursor):
-	cursor.execute('select route_id, direction from gtfs_trips group by 1,2 order by 1,2')
+	cursor.execute('select route_id, direction, route_long_name from gtfs_trips join gtfs_routes using (route_id) group by 1,2,3 order by 1,2')
 	return cursor.fetchall()
 
 def most_frequent_shape_and_trip(route, direction, cursor):
@@ -108,9 +108,9 @@ values (%s, %s, %s, %s, %s, %s, %s)
 	cursor.execute('commit')
 
 if __name__ == '__main__':
-	for route, direction in generate_route_dir_combos(cursor):
+	for route, direction, name in generate_route_dir_combos(cursor):
 	#for route, direction in [('30', 'South')]:
-		print "analyzing", route, direction
+		print "analyzing", route, direction, name
 		shape_id, trip_id = most_frequent_shape_and_trip(route, direction, cursor)
 		if shape_id is None:
 			continue
