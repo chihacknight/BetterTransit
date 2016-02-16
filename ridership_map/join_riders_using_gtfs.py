@@ -26,7 +26,6 @@ order by 2 desc limit 1
 		return (None, None)
 	shape_id = results[0]
 	trip_id = results[2]
-	#print shape_id, trip_id
 	return shape_id, trip_id
 
 def stop_data(trip_id, route, direction, cursor):
@@ -72,23 +71,17 @@ def assign_ridership_to_segments(segments, stops, route, direction, cursor):
 	old_fine_lat = None
 	old_fine_lon = None
 	raw_features = []
-	#print stops[0]
 	for segment in segments:
-		#print segment
 		shape_id, coarse_lat, coarse_lon, fine_lat, fine_lon, segment_sequence = segment
 		if stop_index > len(stops)-1:
 			continue
 		if str(coarse_lat) == str(stops[stop_index][4]) and str(coarse_lon) == str(stops[stop_index][5]):
 			stop = stops[stop_index]
-			#print stop
 			running_total += stops[stop_index][2]
 			running_total -= stops[stop_index][3]
-			#print running_total, "on the bus at", stops[stop_index][6], fine_lat, fine_lon
 			stop_index += 1
 		if old_fine_lat is not None:
-			#print running_total, "on between", old_fine_lat, old_fine_lon, "and", fine_lat, fine_lon
 			pkey_args = (str(old_fine_lon), str(old_fine_lat), str(fine_lon), str(fine_lat), str(route), str(direction))
-			#print pkey_args
 			cursor.execute('''
 delete from segment_ridership
 where 
@@ -109,7 +102,6 @@ values (%s, %s, %s, %s, %s, %s, %s)
 
 if __name__ == '__main__':
 	for route, direction, name in generate_route_dir_combos(cursor):
-	#for route, direction in [('30', 'South')]:
 		print "analyzing", route, direction, name
 		shape_id, trip_id = most_frequent_shape_and_trip(route, direction, cursor)
 		if shape_id is None:
