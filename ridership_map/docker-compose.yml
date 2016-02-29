@@ -1,0 +1,13 @@
+db:
+        image: postgres:9.4
+        ports:
+                - "5432"
+compute:
+        build: .
+        stdin_open: true
+        tty: true
+        entrypoint: /app/run.sh
+        volumes:
+                - ./data:/app/data
+        links: 
+                - db
