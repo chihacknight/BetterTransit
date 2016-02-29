@@ -28,12 +28,7 @@ function makeMap() {
 	});
 	
 	// Make some empty layers that will be filled later
-	var fakeData;
 	layer = new L.featureGroup();
-	geojsonLayer = L.geoJson(fakeData, {
-		//style: {},
-		onEachFeature: onEachFeature	
-	});
 	
 	var otherLayers = {};
 	
@@ -42,13 +37,52 @@ function makeMap() {
 	streets.addTo(map); // load streets by default
 	
 	// create a layer control that turns on/off layers
-	control = L.control.layers(baseMaps, otherLayers, {collapsed: false, autoZIndex: false}).addTo(map);
+	//control = L.control.layers(baseMaps, otherLayers, {collapsed: false, autoZIndex: false}).addTo(map);
+
+	infoBox = createInfoBox().addTo(map);
 	
 	layer.addTo(map);
 	
 	// Adjust the map size
 	resizeMap();
 	$(window).on("resize", resizeMap);
+}
+
+
+function createInfoBox() {
+	var info = L.control();
+
+	info.onAdd = function (map) {
+	    this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+	    this.update();
+	    return this._div;
+	};
+
+	info.update = function (props) {
+	    this._div.innerHTML = '<h4>Bus Ridership Density</h4>' +  (props ?
+		    '<b>' + '</b><br />' + props.num_passengers + ' people / day'
+			    : 'Hover over a street segment');
+			    };
+	return info;
+}
+
+function highlightFeature(e) {
+	var layer = e.target;
+	if (layer.feature) {
+		layer.setStyle({
+			weight: 15,
+		});
+
+		if (!L.Browser.ie && !L.Browser.opera) {
+			layer.bringToFront();
+		}
+		infoBox.update(layer.feature.properties);
+	}
+}
+
+function resetHighlight(e) {
+	geojsonLayer.resetStyle(e.target);
+	infoBox.update();
 }
 
 function addGeoJsonLayer(file) {
@@ -67,17 +101,20 @@ function addGeoJsonLayer(file) {
 		data = data;
 		count = data.features.length;
 		
-		range = getNormalized(data);
+		this.range = getNormalized(data);
 		
 		// Add the data to our GeoJSON layer
-		geojsonLayer.addData(data);
+		geojsonLayer = L.geoJson(data, {
+			style: style,
+			onEachFeature: onEachFeature	
+		});
 		layer.addLayer(geojsonLayer);
 		
 		// Fit the map to that layer 
 		map.fitBounds(layer.getBounds());
 		
 		// Add the layer to our layer switcher
-		control.addOverlay(layer, "Features (" + count + ")");
+		//control.addOverlay(layer, "Features (" + count + ")");
 	})
 	.fail(function() {
 		alert("Couldn't load your GeoJSON file; is it where you said it is?")
@@ -107,9 +144,6 @@ function getNormalized(data) {
 	range['max'] = max;
 	range['min'] = min;
 	
-	//Vishal---> 
-	this.range = range; // Saving range in this.rang, so it can be accessed in getColor().
-	//<---Vishal
 	return range;
 }
 
@@ -120,7 +154,8 @@ function getZScore(value) {
 	* the bus passengers data so that we can easily style the lines
 	*/
 	
-	z = (value - range["min"])/(range["max"] - range["min"]) * 50;
+	z = (value - this.range['min'])/(this.range['max'] - this.range['min']) * 200;
+	console.log(z);
 	
 	return z;
 }
@@ -145,20 +180,36 @@ function resizeMap() {
 function getColor(value) {
 
 	var val = value;
-	// var colorsArray = ["#9ecae1","#3182bd"];
-	var colorsArray = ["#fc9272","#de2d26"];
+	var colorsArray = [
+		'#9ecae1','#6baed6','#4292c6','#2171b5','#084594'];
 	//Finding the percentile. Update the formula if changes nees to be done.
 	var percentile = (val/this.range['max']) * 100; 
 	// console.log("Accessed"+this.range['max']+"Value"+val);
 
-	if(percentile>75){
+	if(percentile>90){
+		var index = 4;
+	} else if(percentile>75){
+		var index = 3;
+	} else if(percentile>50){
+		var index = 2;
+	} else if(percentile>25){
 		var index = 1;
-	} else{
+	} else {
 		var index = 0;
-	}
+	};
 	return colorsArray[index];
 }
 
+function style(feature) {
+	if(feature.properties) {
+		p = feature.properties;
+		return {
+			weight: 6,
+			color: getColor(p.num_passengers),
+			opacity: 1
+		};
+	} else { console.log('no properties'); return {}; }
+}
 function onEachFeature(feature, layer) {
 	
 	/*
@@ -167,16 +218,8 @@ function onEachFeature(feature, layer) {
 	* and how features should be styled
 	*/
 	
-	if(feature.properties) {
-		
-		p = feature.properties;
-		weight = getZScore(p.num_passengers);
-		color = getColor(p.num_passengers);
-		style = {
-			weight: weight,
-			color: color,
-			opacity: 0.09
-		}
-		layer.setStyle(style);
-    }
+ 	layer.on({
+		mouseover: highlightFeature,
+		mouseout: resetHighlight,
+	});
 }

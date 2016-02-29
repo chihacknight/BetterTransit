@@ -1,0 +1,39 @@
+<html>
+	<head>
+		<title>Ridership Density</title>
+		<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+		<script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+		<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+		<style>
+			html, body {
+				height:100%;
+				margin:0;
+			}
+			.info {
+			    padding: 6px 8px;
+			    font: 14px/16px Arial, Helvetica, sans-serif;
+			    background: white;
+			    background: rgba(255,255,255,0.8);
+			    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+			    border-radius: 5px;
+			}
+			.info h4 {
+			    margin: 0 0 5px;
+			    color: #777;
+			}
+		</style>
+	</head>
+	
+	<body>
+		<div class="container">
+			<div id="map"></div>
+		</div>
+		<script>
+			$(document).ready(function() { 
+				makeMap();
+				addGeoJsonLayer("data/citywide.geojson");
+			});	
+		</script>
+		<script src="app.js"></script>
+	</body>
+</html>
