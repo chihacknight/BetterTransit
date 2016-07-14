@@ -22,15 +22,17 @@ def reduced_points(snapped_points):
     prev_direction = None
     prev_run_id = None
     prev_date = None
+    prev_time = None
     nodes_in_run = set()
 
     for row in snapped_points:
-        node_string, route, direction, date, run_id, passengers_on, _, _ = row
+        node_string, route, direction, date, time, run_id, passengers_on, _, _ = row
         if(
             route != prev_route or
             direction != prev_direction or
             run_id != prev_run_id or
-            date != prev_date
+            date != prev_date or
+            time != prev_time
         ):
             prev_node = None
         if run_id != prev_run_id:
@@ -50,6 +52,7 @@ def reduced_points(snapped_points):
                     route,
                     direction,
                     date,
+                    time,
                     run_id,
                     passengers_on
                 ]
@@ -61,4 +64,5 @@ def reduced_points(snapped_points):
         prev_direction = direction
         prev_run_id = run_id
         prev_date = date
-        return FILENAME
+        prev_time = time
+    return FILENAME

@@ -35,9 +35,12 @@ def iterative_snap(lats, lons, run_id, log_file):
     )
     radii = [str(BEGINNING_RADIUS)] * len(lats)
     output = None
+    unsnapped_points = []
     for accuracy in range(BEGINNING_RADIUS + 1, BEGINNING_RADIUS + 30):
         output = snap(coord_string, radii)
         if 'tracepoints' not in output:
+            print(run_id)
+            continue
             raise IOError(output)
         unsnapped_points = []
         for index, tracepoint in enumerate(output['tracepoints']):
@@ -47,11 +50,7 @@ def iterative_snap(lats, lons, run_id, log_file):
         if len(unsnapped_points) == 0:
             print('snapped', run_id, 'at', accuracy, file=log_file)
             return output
-    print(
-        'gave up', run_id, 'with', len(unsnapped_points),
-        'all good besides first and last?',
-        all(output['tracepoints'][1:-1]), file=log_file
-    )
+    print('gave up', run_id)
     return output
 
 
@@ -100,13 +99,17 @@ def snapped_points(input_file):
         lats = sorted_readings['lat'].tolist()
         lons = sorted_readings['lon'].tolist()
         dates = sorted_readings['date'].tolist()
+        times = sorted_readings['time'].tolist()
 
         output = iterative_snap(lats, lons, run_id, log_file)
+        if output is None or 'tracepoints' not in output:
+            continue
 
-        for route, dir, date, lat, lon, passengers_in, tracepoint in zip(
+        for route, dir, date, time, lat, lon, passengers_in, tracepoint in zip(
             sorted_readings['route'].tolist(),
             sorted_readings['dir'].tolist(),
             dates,
+            times,
             lats,
             lons,
             sorted_readings['passengers_in'].tolist(),
@@ -124,6 +127,7 @@ def snapped_points(input_file):
                     route,
                     dir,
                     date,
+                    time,
                     run_id,
                     round(passengers_in, 1),
                     tracepoint['matchings_index'],
@@ -132,7 +136,7 @@ def snapped_points(input_file):
                 writer.writerow(args)
                 yield args
             else:
-                error_writer.writerow([route, dir, date, run_id, lon, lat])
+                error_writer.writerow([route, dir, date, time, run_id, lon, lat])
     output_file.close()
     error_file.close()
     log_file.close()
