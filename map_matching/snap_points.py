@@ -36,7 +36,7 @@ def iterative_snap(lats, lons, run_id, log_file):
     radii = [str(BEGINNING_RADIUS)] * len(lats)
     output = None
     unsnapped_points = []
-    for accuracy in range(BEGINNING_RADIUS + 1, BEGINNING_RADIUS + 30):
+    for accuracy in range(BEGINNING_RADIUS + 1, BEGINNING_RADIUS + 15):
         output = snap(coord_string, radii)
         if 'tracepoints' not in output:
             print(run_id)
