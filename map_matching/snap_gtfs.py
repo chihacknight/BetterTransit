@@ -5,7 +5,8 @@ from sqlalchemy import (
     Integer,
     MetaData,
     String,
-    Table
+    Table,
+    Text
 )
 from snap_points import snap
 
@@ -21,13 +22,23 @@ def ensure_schema(engine):
         Column('num_trips', Integer),
         Column('routes', String),
     )
+    Table(
+        'gtfs_ways',
+        meta,
+        Column('begin_node', BigInteger),
+        Column('end_node', BigInteger),
+        Column('way_id', BigInteger),
+        Column('num_trips', Integer),
+        Column('routes', String),
+        Column('shapes', String),
+        Column('geometry_geojson', Text),
+    )
     meta.create_all(engine)
 
-if __name__ == '__main__':
-    engine = create_engine("postgresql://transit:transit@127.0.0.1/transit")
-    ensure_schema(engine)
+def snap_gtfs(engine):
     connection = engine.raw_connection()
     cursor = connection.cursor()
+    cursor.execute('truncate gtfs_node_pairs')
     cursor.execute("""
     select
         shape_id,
@@ -45,21 +56,19 @@ if __name__ == '__main__':
             gtfs_trips
             join gtfs_calendar on (gtfs_trips.service_id = gtfs_calendar.service_id and tuesday = 1)
             where route_id not in ('Blue', 'Red', 'Brn', 'P', 'Y', 'Pink', 'Org', 'G')
+            and route_id = '9'
             group by 1
     ) distinct_shapes using (shape_id)
     group by shape_id
     """)
     result = cursor.fetchall()
     for shape_id, lats, lons, num_trips, routes in result:
-        print shape_id
-        print len(lats)
         coord_string = ';'.join(
             "%s,%s" % (lon, lat) for lat, lon in zip(lats, lons)
         )
         output = snap(coord_string, ['20' for _ in lats])
         shape_nodes = []
         if 'tracepoints' in output:
-            print 'got tracepoints'
             for lat, lon, tracepoint in zip(
                 lats,
                 lons,
@@ -80,6 +89,56 @@ if __name__ == '__main__':
                     'insert into gtfs_node_pairs values (%s, %s, %s, %s, %s)',
                     (shape_id, shape_nodes[i], shape_nodes[i+1], num_trips, routes)
                 )
-        else:
-            print 'did not', output
     connection.commit()
+
+def compute_ways(engine):
+    connection = engine.raw_connection()
+    cursor = connection.cursor()
+    cursor.execute('truncate gtfs_ways')
+    query = """
+        insert into gtfs_ways
+	select
+            begin_node,
+            end_node,
+            max(planet_osm_ways.id) as way_id,
+            sum(num_trips) as num_trips,
+            string_agg(distinct routes, ',') as routes,
+            string_agg(distinct shape_id, ',') as shapes,
+           st_asgeojson(st_makeline(
+                   st_transform(
+                           st_geomfromtext('point('||bnode.lon/100||' '||bnode.lat/100||')', 3785),
+                           4326
+                   ),
+                   st_transform(
+                           st_geomfromtext('point('||enode.lon/100||' '||enode.lat/100||')', 3785),
+                           4326
+                   )
+           )) as geometry_geojson
+	from
+		gtfs_node_pairs
+		join planet_osm_ways on (nodes @> ARRAY[begin_node] and nodes @> ARRAY[end_node])
+		left join planet_osm_nodes bnode on (begin_node = bnode.id)
+		left join planet_osm_nodes enode on (end_node = enode.id)
+	group by 1, 2, 7
+	order by 4 desc"""
+    cursor.execute(query)
+    connection.commit()
+
+
+def export(engine):
+    table = 'gtfs_ways'
+    output_filename = "{}.csv".format(table)
+    with open(output_filename, 'wb') as f:
+        conn = engine.raw_connection()
+        cur = conn.cursor()
+        cur.copy_expert(
+            sql='COPY {} to stdout with csv header'.format(table),
+            file=f
+        )
+
+if __name__ == '__main__':
+    engine = create_engine("postgresql://transit:transit@127.0.0.1/transit")
+    ensure_schema(engine)
+    snap_gtfs(engine)
+    compute_ways(engine)
+    export(engine)

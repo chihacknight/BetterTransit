@@ -16,4 +16,7 @@ There is another script in here to snap GTFS data to the street grid. It uses th
 
 `python snap_gtfs.py`
 
-export.sql takes the table created by snap_gtfs.py and exports it to a CSV file suitable for upload to CartoDB.
+It will result in a gtfs_ways.csv output file. For intermediate processing, it requires:
+
+1. A GTFS extract loaded into Postgres
+2. An OSM extract loaded into Postgres, with --slim option in osm2pgsql to create the intermediate tables 'planet_osm_nodes' and 'planet_osm_ways'
