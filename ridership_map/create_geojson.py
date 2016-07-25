@@ -27,7 +27,7 @@ select
 	return list(reversed(cursor.fetchall()))
 
 if __name__ == '__main__':
-	conn = psycopg2.connect(database='transit', user='transit')
+	conn = psycopg2.connect(database='transit', user='postgres', host='db')
 	cursor = conn.cursor()
 	results = get_data(cursor)
 	features = []

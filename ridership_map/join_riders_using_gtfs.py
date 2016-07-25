@@ -3,7 +3,7 @@ import csv
 import geojson
 import argparse
 
-conn = psycopg2.connect(database='transit', user='transit')
+conn = psycopg2.connect(database='transit', user='postgres', host='db')
 cursor = conn.cursor()
 
 
